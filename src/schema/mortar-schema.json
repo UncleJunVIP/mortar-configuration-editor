@@ -1,0 +1,351 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "hosts": {
+      "title": "Hosts",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Host"
+      }
+    },
+    "download_art": {
+      "type": "boolean",
+      "title": "Download Art"
+    },
+    "art_download_type": {
+      "type": "string",
+      "title": "Art Download Type",
+      "enum": [
+        "BOX_ART",
+        "TITLE_SCREEN",
+        "LOGOS",
+        "SCREENSHOTS"
+      ],
+      "default": "BOX_ART"
+    },
+    "unzip_downloads": {
+      "type": "boolean",
+      "title": "Unzip Downloads"
+    },
+    "group_bin_cue": {
+      "type": "boolean",
+      "title": "Group BIN/CUE Files"
+    },
+    "group_multi_disc": {
+      "type": "boolean",
+      "title": "Group Multi-Disc Items"
+    },
+    "log_level": {
+      "type": "string",
+      "title": "Log Level",
+      "enum": [
+        "DEBUG",
+        "ERROR"
+      ],
+      "default": "DEBUG",
+      "enumNames": [
+        "Debug",
+        "Error"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "Host": {
+      "type": "object",
+      "properties": {
+        "display_name": {
+          "type": "string",
+          "title": "Display Name"
+        },
+        "host_type": {
+          "type": "string",
+          "title": "Host Type",
+          "enum": [
+            "ROMM",
+            "MEGATHREAD"
+          ],
+          "default": "ROMM"
+        },
+        "root_uri": {
+          "type": "string",
+          "title": "Root URI"
+        },
+        "port": {
+          "type": "integer",
+          "title": "Port",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "username": {
+          "type": "string",
+          "title": "Username"
+        },
+        "password": {
+          "type": "string",
+          "title": "Password"
+        },
+        "platforms": {
+          "type": "array",
+          "title": "Platforms",
+          "items": {
+            "$ref": "#/definitions/Platform"
+          }
+        },
+        "filters": {
+          "$ref": "#/definitions/Filters"
+        }
+      },
+      "required": [
+        "display_name",
+        "host_type",
+        "root_uri"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "host_type": {
+                "const": "ROMM"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "username": true,
+              "password": true,
+              "port": true,
+              "platforms": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/PlatformROMM"
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "username": false,
+              "password": false,
+              "port": false,
+              "platforms": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/PlatformNonROMM"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Platform": {
+      "type": "object",
+      "properties": {
+        "platform_name": {
+          "type": "string",
+          "title": "Platform Name"
+        },
+        "system_tag": {
+          "type": "string",
+          "title": "System Tag"
+        },
+        "local_directory": {
+          "type": "string",
+          "title": "Local Directory"
+        },
+        "host_subdirectory": {
+          "type": "string",
+          "title": "Host Subdirectory"
+        },
+        "romm_platform_id": {
+          "type": "string",
+          "title": "ROMM Platform ID"
+        }
+      },
+      "required": [
+        "platform_name"
+      ],
+      "additionalProperties": false
+    },
+    "PlatformROMM": {
+      "type": "object",
+      "properties": {
+        "platform_name": {
+          "type": "string",
+          "title": "Platform Name"
+        },
+        "system_tag": {
+          "type": "string",
+          "title": "System Tag"
+        },
+        "local_directory": {
+          "type": "string",
+          "title": "Local Directory"
+        },
+        "romm_platform_id": {
+          "type": "string",
+          "title": "ROMM Platform ID"
+        }
+      },
+      "required": [
+        "platform_name"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "local_directory": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "local_directory"
+                ]
+              },
+              {
+                "properties": {
+                  "system_tag": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "system_tag"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "if": {
+              "properties": {
+                "local_directory": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "local_directory"
+              ]
+            },
+            "then": {
+              "properties": {
+                "system_tag": false
+              }
+            },
+            "else": {
+              "properties": {
+                "local_directory": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "PlatformNonROMM": {
+      "type": "object",
+      "properties": {
+        "platform_name": {
+          "type": "string",
+          "title": "Platform Name"
+        },
+        "system_tag": {
+          "type": "string",
+          "title": "System Tag"
+        },
+        "local_directory": {
+          "type": "string",
+          "title": "Local Directory"
+        },
+        "host_subdirectory": {
+          "type": "string",
+          "title": "Host Subdirectory"
+        }
+      },
+      "required": [
+        "platform_name"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "local_directory": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "local_directory"
+                ]
+              },
+              {
+                "properties": {
+                  "system_tag": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "system_tag"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "if": {
+              "properties": {
+                "local_directory": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "local_directory"
+              ]
+            },
+            "then": {
+              "properties": {
+                "system_tag": false
+              }
+            },
+            "else": {
+              "properties": {
+                "local_directory": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Filters": {
+      "type": "object",
+      "title": "Filters",
+      "properties": {
+        "inclusive_filters": {
+          "type": "array",
+          "title": "Inclusive Filters",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exclusive_filters": {
+          "type": "array",
+          "title": "Exclusive Filters",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
