@@ -43,11 +43,7 @@
         "DEBUG",
         "ERROR"
       ],
-      "default": "DEBUG",
-      "enumNames": [
-        "Debug",
-        "Error"
-      ]
+      "default": "DEBUG"
     }
   },
   "additionalProperties": false,
@@ -150,7 +146,8 @@
         },
         "system_tag": {
           "type": "string",
-          "title": "System Tag"
+          "title": "System Tag",
+          "description": "e.g. Super Nintendo Entertainment System (SFC) would be SFC"
         },
         "local_directory": {
           "type": "string",
