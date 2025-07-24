@@ -1,11 +1,12 @@
 import {
     AddIcon,
-    AttachmentIcon,
+    ArrowUpIcon,
     ChevronDownIcon,
     ChevronUpIcon,
     CopyIcon,
     DeleteIcon,
     DownloadIcon,
+    EditIcon,
     MoonIcon,
     SunIcon,
 } from '@chakra-ui/icons';
@@ -33,24 +34,120 @@ import {
 } from '@chakra-ui/react';
 import Form from '@rjsf/chakra-ui';
 import validator from '@rjsf/validator-ajv8';
-import React, {useState} from 'react';
+import React, {useEffect, useState, useMemo, useCallback, useRef} from 'react';
 import schema from '../schema/mortar-schema.json';
 
 const ConfigEditor = () => {
-    const [formData, setFormData] = useState({});
-    const {colorMode, toggleColorMode} = useColorMode();
     const toast = useToast();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const apiParam = urlParams.get('api');
+
+    const [formData, setFormData] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const currentFormDataRef = useRef(formData);
+
+    const {colorMode, toggleColorMode} = useColorMode();
     const bgColor = useColorModeValue('gray.50', 'gray.900');
     const cardBgColor = useColorModeValue('white', 'gray.800');
     const titleBarBg = useColorModeValue('gray.100', 'gray.700');
     const borderColor = useColorModeValue('gray.200', 'gray.600');
+
+    useEffect(() => {
+        if (apiParam) {
+            loadConfigFromApi(apiParam);
+        }
+    }, []);
+
+    const loadConfigFromApi = async (apiAddress) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`http://${apiAddress}:1337/config`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const config = await response.json();
+            setFormData(config);
+
+            toast({
+                title: 'Configuration loaded from API',
+                description: `Successfully loaded config from ${apiAddress}:1337`,
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+                position: 'top-middle',
+            });
+        } catch (error) {
+            console.error('Failed to load config from API:', error);
+            toast({
+                title: 'Failed to load configuration',
+                description: `Could not load config from ${apiAddress}:1337. ${error.message}`,
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+                position: 'top-middle',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const saveConfigToApi = async (apiAddress) => {
+        setIsLoading(true);
+        try {
+            const currentData = currentFormDataRef.current;
+            setFormData(currentData)
+
+            const response = await fetch(`http://${apiAddress}:1337/config`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentData),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            toast({
+                title: 'Configuration saved to API',
+                description: `Successfully saved config to ${apiAddress}:1337`,
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+                position: 'top-middle',
+            });
+        } catch (error) {
+            console.error('Failed to save config to API:', error);
+            toast({
+                title: 'Failed to save configuration',
+                description: `Could not save config to ${apiAddress}:1337. ${error.message}`,
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+                position: 'top-middle',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        currentFormDataRef.current = formData;
+    }, [formData]);
+
+    const handleFormChange = useCallback(({formData: newFormData}) => {
+        currentFormDataRef.current = newFormData;
+    }, []);
 
     const ArrayFieldTemplate = (props) => {
         const {title, items, canAdd, onAddClick} = props;
 
         return (
             <Box mb={6}>
-                {/* Section header */}
                 <Flex
                     justify="space-between"
                     align="center"
@@ -72,7 +169,6 @@ const ConfigEditor = () => {
                     )}
                 </Flex>
 
-                {/* Array items */}
                 <VStack spacing={4} align="stretch">
                     {items.map((element) => {
                         const itemData = element.children?.props?.formData;
@@ -80,7 +176,6 @@ const ConfigEditor = () => {
 
                         return (
                             <Box key={element.key}>
-                                {/* Title bar with controls */}
                                 <Flex
                                     bg={titleBarBg}
                                     border="1px solid"
@@ -139,7 +234,6 @@ const ConfigEditor = () => {
                                     </ButtonGroup>
                                 </Flex>
 
-                                {/* Content area */}
                                 <Box
                                     border="1px solid"
                                     borderColor={borderColor}
@@ -158,14 +252,17 @@ const ConfigEditor = () => {
         );
     };
 
-    const uiSchema = {
+    const uiSchema = useMemo(() => ({
+        'ui:submitButtonOptions': {
+            norender: true,
+        },
         hosts: {
             'ui:options': {
-                label: false,  // Hide the "Hosts" label if you want
+                label: false,
             },
             items: {
                 'ui:options': {
-                    label: false  // This hides the "Item-1", "Item-2" labels
+                    label: false
                 },
                 password: {
                     'ui:widget': 'password',
@@ -179,7 +276,7 @@ const ConfigEditor = () => {
                     },
                     items: {
                         'ui:options': {
-                            label: false  // Hide platform item labels
+                            label: false
                         },
                         local_directory: {
                             'ui:placeholder': '/path/to/directory',
@@ -193,7 +290,7 @@ const ConfigEditor = () => {
                         },
                         items: {
                             'ui:options': {
-                                label: false  // Hide filter item labels
+                                label: false
                             }
                         }
                     },
@@ -203,17 +300,19 @@ const ConfigEditor = () => {
                         },
                         items: {
                             'ui:options': {
-                                label: false  // Hide filter item labels
+                                label: false
                             }
                         }
                     },
                 },
             },
         },
-    };
+    }));
 
     const handleExport = () => {
-        const dataStr = JSON.stringify(formData, null, 2);
+        const currentData = currentFormDataRef.current;
+        const dataStr = JSON.stringify(currentData, null, 2);
+
         const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
 
         const exportFileDefaultName = 'mortar-config.json';
@@ -262,6 +361,20 @@ const ConfigEditor = () => {
         }
     };
 
+    const MemoizedForm = React.memo(({schema, uiSchema, formData, onChange, templates}) => (
+        <Form
+            schema={schema}
+            uiSchema={uiSchema}
+            formData={formData}
+            validator={validator}
+            onChange={onChange}
+            onSubmit={() => {
+            }}
+            onError={(errors) => console.log('Validation errors:', errors)}
+            templates={templates}
+        />
+    ));
+
     return (
         <Box minH="100vh" bg={bgColor}>
             <Container maxW="container.2xl" py={8}>
@@ -271,12 +384,13 @@ const ConfigEditor = () => {
                             <Heading size="lg">Mortar Configuration Editor</Heading>
                             <Spacer/>
                             <HStack spacing={4}>
-                                <Button
+                                {!apiParam && <Button
                                     as="label"
-                                    leftIcon={<AttachmentIcon/>}
+                                    leftIcon={<EditIcon/>}
                                     colorScheme="green"
                                     variant="solid"
                                     cursor="pointer"
+                                    isDisabled={isLoading}
                                 >
                                     Import
                                     <Input
@@ -285,15 +399,27 @@ const ConfigEditor = () => {
                                         onChange={handleImport}
                                         display="none"
                                     />
-                                </Button>
-                                <Button
+                                </Button>}
+                                {!apiParam && <Button
                                     leftIcon={<DownloadIcon/>}
                                     colorScheme="blue"
                                     variant="solid"
                                     onClick={handleExport}
+                                    isDisabled={isLoading}
                                 >
                                     Export
-                                </Button>
+                                </Button>}
+                                {apiParam && <Button
+                                    leftIcon={<ArrowUpIcon/>}
+                                    colorScheme="green"
+                                    variant="solid"
+                                    onClick={() => saveConfigToApi(apiParam)}
+                                    isDisabled={isLoading}
+                                    isLoading={isLoading}
+                                    loadingText="Saving..."
+                                >
+                                    Save to API
+                                </Button>}
                                 <IconButton
                                     icon={colorMode === 'light' ? <MoonIcon/> : <SunIcon/>}
                                     onClick={toggleColorMode}
@@ -307,15 +433,11 @@ const ConfigEditor = () => {
                     <Divider/>
 
                     <CardBody>
-                        <Form
+                        <MemoizedForm
                             schema={schema}
                             uiSchema={uiSchema}
                             formData={formData}
-                            validator={validator}
-                            onChange={({formData}) => setFormData(formData)}
-                            onSubmit={() => {
-                            }}
-                            onError={(errors) => console.log('Validation errors:', errors)}
+                            onChange={handleFormChange}
                             templates={{ArrayFieldTemplate}}
                         />
                     </CardBody>
