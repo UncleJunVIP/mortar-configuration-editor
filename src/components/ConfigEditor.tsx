@@ -98,7 +98,7 @@ const ConfigEditor = () => {
         setIsLoading(true);
         try {
             const currentData = currentFormDataRef.current;
-            setFormData(currentData)
+            setFormData(currentData);
 
             const response = await fetch(`http://${apiAddress}:1337/config`, {
                 method: 'POST',
@@ -311,6 +311,7 @@ const ConfigEditor = () => {
 
     const handleExport = () => {
         const currentData = currentFormDataRef.current;
+        setFormData(currentData);
         const dataStr = JSON.stringify(currentData, null, 2);
 
         const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
@@ -418,7 +419,7 @@ const ConfigEditor = () => {
                                     isLoading={isLoading}
                                     loadingText="Saving..."
                                 >
-                                    Save to API
+                                    Save to Device
                                 </Button>}
                                 <IconButton
                                     icon={colorMode === 'light' ? <MoonIcon/> : <SunIcon/>}
